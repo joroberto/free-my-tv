@@ -73,6 +73,13 @@ final class HomeMode {
      */
     static final String[] DEBLOAT = {
         "com.google.android.play.games", "com.google.android.youtube.tvmusic",        // Play Games, YouTube Music
+        "com.google.android.videos",                                                  // Play Movies: closed, still starts at boot
+        // Sony (BRAVIA 4K GB, A8F, Android 9 tested)
+        "tv.samba.ssm",                                                               // Samba TV ACR: watches what's on screen
+        "com.sony.dtv.sonyselect",                                                    // Sony Select promo apps
+        "com.sony.dtv.demomode", "com.sony.dtv.demosupport", "com.sony.dtv.multiscreendemo",  // store demos
+        "com.sony.dtv.discovery",                                                     // Discover menu (21 MB, 8 services)
+        "com.sony.dtv.dialservice",                                                   // DIAL from phones; Chromecast stays
         // TCL
         "com.tcl.magiconnectfree", "com.tcl.miracast",                                // screen mirroring apps
         "com.tcl.waterfall.overseas", "com.tcl.channelplus",                          // TCL Channel and its Live TV
@@ -164,6 +171,27 @@ final class HomeMode {
         "com.droidlogic.launcher.provider", "com.droidlogic.android.tv.connecteddevices",
         // HY300 projectors (Hotack, Allwinner H713): keystone and projection settings, the HDMI player, Miracast receiver
         "com.htc.htcsettings", "com.softwinner.awlivetv", "com.softwinner.miracastReceiver",
+        // Sony (BRAVIA, MediaTek): live TV, tuner and inputs, guide, broadcast data and interactive TV, remote keys and
+        // Action Menu, pairing, BRAVIA Sync (CEC) and sound, OLED panel and heat, updates, setup and settings, network,
+        // IP control, timers, recording, service menu, device agent, web runtime and the MediaTek agents
+        "com.sony.dtv.tvx", "com.sony.dtv.tvxlauncher.programguide", "com.sony.dtv.tvinput.external",
+        "com.sony.dtv.tvinput.tuner", "com.sony.dtv.tvinput.provider", "com.sony.dtv.tvsettingsbroadcast",
+        "com.sony.dtv.tuningconfirmation_nondvb", "com.sony.dtv.broadcasttimezonereceiver",
+        "com.sony.dtv.serviceinformation", "com.sony.dtv.interactivetvutil", "com.sony.dtv.interactivetvutil.output",
+        "com.sony.dtv.videoframeserver", "com.sony.dtv.sonysystemservice", "com.sony.dtv.scrums.action",
+        "com.sony.dtv.tvdotactiondevicecontrol", "com.sony.dtv.uinputservice", "com.sony.dtv.rcpowerkey",
+        "com.sony.dtv.remotepairing", "com.sony.dtv.remotecontrolsettings", "com.sony.dtv.imeproxy",
+        "com.sony.dtv.braviasyncservice", "com.sony.dtv.braviasyncmenu", "com.sony.dtv.braviasyncsetting",
+        "com.sony.dtv.HomeTheatreControl", "com.sony.dtv.audiooutput", "com.sony.dtv.panelsettings",
+        "com.sony.dtv.heatcontrol", "com.sony.dtv.osdplanevisibilitymanager", "com.sony.dtv.systemupdate",
+        "com.sony.dtv.quicksetup", "com.sony.dtv.QuickSetupCustomizer", "com.sony.dtv.settingsprovider",
+        "com.sony.dtv.configsettings", "com.sony.dtv.countrysetting", "com.sony.dtv.provider.modelvariation",
+        "com.sony.dtv.privacypolicy", "com.sony.dtv.networksettings", "com.sony.dtv.webapi.core",
+        "com.sony.dtv.remoteaccess", "com.sony.dtv.timers", "com.sony.dtv.hddmgr", "com.sony.dtv.usbmsgservice",
+        "com.sony.dtv.servicemode", "com.sony.dtv.da.service", "com.qterics.da.product",
+        "com.sony.dtv.b2b.frameworkextension", "com.sony.dtv.b2b.noderuntime.privilege",
+        "com.sony.dtv.b2b.webappruntimedrm", "com.vewd.core.service", "mtktvapi.agent", "com.mediatek.agent",
+        "com.mediatek.dmagent",
         // Amazon Fire TV: launcher, settings, setup, remote pairing, inputs, live TV, channel scan, OTA updates, Appstore
         // (every com.amazon.* is refused by mayTurnOff too)
         "com.amazon.tv.launcher", "com.amazon.firehomestarter", "com.amazon.tv.settings.v2", "com.amazon.tv.settings.core",
@@ -195,22 +223,32 @@ final class HomeMode {
     /**
      * Of these, the ones the TV still needs, whatever they look like: the software under its inputs (they ask for
      * TV_INPUT_HARDWARE; off, HDMI shows "No signal" and only a full restore brought it back, CleanYourTV #321), and
-     * the receiver of the remote's Input key and Bluetooth pairing (fusion.android.tv.demo on several MediaTek boards).
+     * the receiver of the remote's Input key and Bluetooth pairing (fusion.android.tv.demo on several MediaTek boards),
+     * and any app on a shared system user (uid below 10000): it owns what that user saved, Wi-Fi networks included
+     * (a Sony BRAVIA's are cname=android.uid.system:1000, which matches no package name in wifiOwners).
      * null when the check didn't finish: then none of them goes off this time.
      */
     private static Set<String> neededByTv(Adb adb, Set<String> pkgs) throws IOException {
         Set<String> keep = new HashSet<>();
         if (pkgs.isEmpty()) return keep;
+        Matcher uid = Pattern.compile("package:([\\w.]+) uid:(\\d+)").matcher(adb.shell("pm list packages -U"));
+        boolean listed = false;
+        while (uid.find()) {
+            listed = true;
+            if (pkgs.contains(uid.group(1)) && Integer.parseInt(uid.group(2)) < 10_000) keep.add(uid.group(1));
+        }
+        if (!listed) return null;
         // Only the package's own requested permissions: a shared user's would match by mistake. A line per package keeps
-        // the connection's read timeout from running out on a slow TV.
+        // the connection's read timeout from running out on a slow TV. A package whose dump didn't come back is kept.
         String out = adb.shell("for p in " + String.join(" ", sorted(pkgs)) + "; do d=\"$(dumpsys package $p)\"; "
-                + "if printf '%s\\n' \"$d\" | sed -n -r '/requested permissions:/,/(install|runtime) permissions:|User [0-9]+:/p'"
+                + "if ! printf '%s\\n' \"$d\" | grep -q -F \"Package [$p]\""
+                + " || printf '%s\\n' \"$d\" | sed -n -r '/requested permissions:/,/(install|runtime) permissions:|User [0-9]+:/p'"
                 + " | grep -q TV_INPUT_HARDWARE || printf '%s\\n' \"$d\" | grep -q -E 'TV_INPUT_BUTTON|CONNECT_INPUT|AddAccessory';"
                 + " then echo \"keep $p\"; else echo \"- $p\"; fi; done; echo checked");
         if (!out.contains("checked")) return null;
         Matcher m = Pattern.compile("keep ([\\w.]+)").matcher(out);
         while (m.find()) keep.add(m.group(1));
-        if (!keep.isEmpty()) AppLog.w("kept on, the TV's inputs or remote need them: " + String.join(", ", sorted(keep)));
+        if (!keep.isEmpty()) AppLog.w("kept on, the TV's inputs, remote or system user need them: " + String.join(", ", sorted(keep)));
         return keep;
     }
 
@@ -676,9 +714,11 @@ final class HomeMode {
                 boolean reverted = s.optBoolean("homeReverted");
                 String home = originalHome(s);
                 String homePkg = packageOf(home);
-                // Who saved the Wi-Fi unknown: the setup app and the home screen wait for the next check.
+                // Who saved the Wi-Fi unknown: nothing new goes off (the switch stops on Wi-Fi too), and the setup app and
+                // the home screen wait for the next check.
+                boolean wifiUnknown = owners == null;
                 Set<String> wait = new HashSet<>();
-                if (owners == null) {
+                if (wifiUnknown) {
                     owners = new HashSet<>();
                     wait.add(GOOGLE_SETUP);
                     if (homePkg != null) wait.add(homePkg);
@@ -706,8 +746,10 @@ final class HomeMode {
                 // Original to turn on.
                 List<String> keptOff = stringList(s, "keptOff");
                 Set<String> candidates = new HashSet<>();
+                // keptOff too: one a TV update turned back on is checked before it goes off again (never turned on
+                // below, since keptOff isn't in disabled).
                 for (String pkg : wanted) {
-                    if (present.contains(pkg) && !keptOff.contains(pkg) && mayTurnOff(pkg)) candidates.add(pkg);
+                    if (present.contains(pkg) && mayTurnOff(pkg)) candidates.add(pkg);
                 }
                 Set<String> found = neededByTv(adb, candidates);
                 Set<String> needed = found == null ? candidates : found;
@@ -743,7 +785,7 @@ final class HomeMode {
                         if (!keptOff.contains(pkg)) disabled.add(pkg);
                         continue;
                     }
-                    if (needed.contains(pkg)) continue;
+                    if (needed.contains(pkg) || wifiUnknown) continue;
                     if (pkg.equals(homePkg) && setupOn) {
                         AppLog.w("kept the TV's home screen on: Google TV's setup app is still on");
                         continue;

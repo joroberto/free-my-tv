@@ -191,7 +191,9 @@ To remove it for good, switch to *Original* first, then uninstall *Free My TV* (
 - It becomes the home screen and, unless `screensaver=false`, the screensaver.
 - It turns off, without uninstalling:
   - the stock home screen and screensaver (the screensaver stays with `screensaver=false`);
-  - Google TV's recovery home, Play Games and YouTube Music;
+  - Google TV's recovery home, Play Games, YouTube Music and Play Movies;
+  - on Sony TVs, Samba TV's screen-content recognition (ACR), Sony Select, the store demos, the Discover menu and DIAL
+    (opening apps from a phone; Chromecast stays);
   - on TCL TVs, the TCL Channel, messages, store demo, hotel menu, manuals, mirroring and logging apps;
   - on Philco TVs, AI PONT (promo channels and app downloads) and the manual;
   - on Multilaser TVs, Anoki's screen-content recognition (ACR), the store demo and the manual;

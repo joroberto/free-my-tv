@@ -109,6 +109,8 @@ final class HomeApps {
         {"peacock", "Peacock", "com.peacocktv.peacockandroid", "6E55DC", "", "1"},
         {"peacock", "Peacock", "com.peacock.peacockfiretv", "6E55DC", "", "1"},
         {"globoplay", "Globoplay", "com.globo.globotv", "FF5A1F", "tint", "1"},
+        {"jellyfin", "Jellyfin", "org.jellyfin.androidtv", "AA5CC3", "", "1"},  // your own media server
+        {"emby", "Emby", "tv.emby.embyatv", "52B54B", "", "1"},
         {"kinopoisk", "Кинопоиск", "ru.kinopoisk.tv", "FF5500", "white", "1"},
         {"okko", "Okko", "ru.more.play", "6D43FF", "", "1"},
         {"premier", "Premier", "gpm.tnt_premier", "FF2D55", "", "1"},

@@ -196,7 +196,15 @@ Then, in the code:
   Android's own pieces (`CORE`: with the permission controller or package installer off, a TV may not start again) and
   factory menus (`FACTORY`), and `neededByTv` keeps on, on the TV itself, anything that asks for `TV_INPUT_HARDWARE`
   (the layer under HDMI and the tuner: off, inputs show "No signal") or receives the remote's Input key
-  (`fusion.android.tv.demo` does on several MediaTek boards).
+  (`fusion.android.tv.demo` does on several MediaTek boards), and any app on a shared system user (uid below 10000,
+  from `pm list packages -U`): a Sony BRAVIA's Wi-Fi networks are `cname=android.uid.system:1000`, which `wifiOwners`
+  can't tie to a package, and six Sony and MediaTek apps run as that user.
+- Sony BRAVIA 4K GB (XBR-55A8F, MT5891, Android 9, `PTT1.190515.001.S54`): the stock home is `tvlauncher` (priority 2,
+  the only system one besides Sony's `FallbackHome` in `com.android.tv.settings`), the screensaver `backdrop`, and
+  `setupwraith` isn't a home. `DEBLOAT` takes Samba TV, Sony Select, the demos, Discover and DIAL; `PROTECTED` lists
+  the live TV, tuner, inputs, keys, BRAVIA Sync, panel, update, IP control and device-agent pieces. Its remote's app
+  buttons are global keys for `com.sony.dtv.sonysystemservice` (`BUTTON_4`, `_8`, `_9`); Discover is `BUTTON_1`,
+  Action Menu `BUTTON_2` (`scrums.action`), the demo `BUTTON_5`.
 - `HomeApps.SHELF`, `LIVE_TV_APPS` and `HIDDEN`: the shelf apps, the brand's live TV app, apps to hide from All Apps.
 - Build, install, have them switch on the TV, read `adb logcat -s FreeMyTV`, then have them switch back to
   *Original* once and confirm everything returned.
