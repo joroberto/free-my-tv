@@ -73,7 +73,7 @@ final class HomeMode {
      */
     static final String[] DEBLOAT = {
         "com.google.android.play.games", "com.google.android.youtube.tvmusic",        // Play Games, YouTube Music
-        "com.google.android.videos",                                                  // Play Movies: closed, still starts at boot
+        // (not Play Movies: on Android TV 9 it still plays what was bought on Google Play)
         // Sony (BRAVIA 4K GB, A8F, Android 9 tested)
         "tv.samba.ssm",                                                               // Samba TV ACR: watches what's on screen
         "com.sony.dtv.sonyselect",                                                    // Sony Select promo apps
